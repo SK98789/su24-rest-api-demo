@@ -9,6 +9,10 @@ public class Student {
 
     private double gpa;
 
+    public Student(){
+
+    }
+
     public Student(int id, String name, String major, double gpa) {
         this.id = id;
         this.name = name;

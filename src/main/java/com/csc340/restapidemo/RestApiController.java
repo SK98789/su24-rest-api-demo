@@ -3,10 +3,13 @@ package com.csc340.restapidemo;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.File;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -14,7 +17,8 @@ import java.util.logging.Logger;
 @RestController
 public class RestApiController {
 
-    Map<Integer, Student> studentDatabase = new HashMap<>();
+    @Autowired
+    StudentService studentService;
 
     /**
      * Hello World API endpoint.
@@ -45,10 +49,7 @@ public class RestApiController {
      */
     @GetMapping("students/all")
     public Object getAllStudents() {
-        if (studentDatabase.isEmpty()) {
-            studentDatabase.put(1, new Student(1, "sample1", "csc", 3.86));
-        }
-        return studentDatabase.values();
+        return studentService.getAllStudents();
     }
 
     /**
@@ -59,9 +60,9 @@ public class RestApiController {
      */
     @GetMapping("students/{id}")
     public Student getStudentById(@PathVariable int id) {
-        return studentDatabase.get(id);
-    }
 
+        return studentService.getStudentByID(id);
+    }
 
     /**
      * Create a new Student entry.
@@ -71,8 +72,18 @@ public class RestApiController {
      */
     @PostMapping("students/create")
     public Object createStudent(@RequestBody Student student) {
-        studentDatabase.put(student.getId(), student);
-        return studentDatabase.values();
+        return studentService.createStudent(student);
+    }
+
+    /**
+     * Edit a Student Entry.
+     * @param id the unique student ID.
+     * @param student the new student object to replace the old object.
+     * @return the List of all Students.
+     */
+    @PutMapping("/students/update/{id}")
+    public Object editStudent(@PathVariable int id, @RequestBody Student student){
+        return studentService.editStudent(id, student);
     }
 
     /**
@@ -83,8 +94,7 @@ public class RestApiController {
      */
     @DeleteMapping("students/delete/{id}")
     public Object deleteStudent(@PathVariable int id) {
-        studentDatabase.remove(id);
-        return studentDatabase.values();
+        return studentService.deleteStudent(id);
     }
 
     /**
@@ -149,5 +159,44 @@ public class RestApiController {
             return "error in /univ";
         }
 
+    }
+
+    /**
+     * Returns a specified number of Cat Facts
+     * @param number is the number of facts to return
+     * @return json object
+     */
+    @GetMapping("/CatFacts/{number}")
+    public Object getRandomDogFact(@PathVariable int number){
+        try{
+
+            //URL for the Cat Facts with the specified number of facts
+            String url = "https://meowfacts.herokuapp.com/?count=" + number;
+            RestTemplate restTemplate = new RestTemplate();
+            ObjectMapper objectMapper = new ObjectMapper();
+
+
+            String jsonListResponse = restTemplate.getForObject(url, String.class);
+
+            //API returns a JSON object
+            JsonNode root = objectMapper.readValue(jsonListResponse, JsonNode.class);
+
+            //value for "data" property is a String Array
+            JsonNode facts = root.get("data");
+
+            //Loop through the String Array to obtain the String objects
+            for(JsonNode s: facts){
+                System.out.println("Cat Fact: " + s.asText());
+            }
+
+            //Return the JSON object
+            return root;
+
+
+        } catch (JsonProcessingException ex) {
+            Logger.getLogger(RestApiController.class.getName()).log(Level.SEVERE,
+                    null, ex);
+            return "error in /DogFacts";
+        }
     }
 }
